@@ -44,10 +44,10 @@ export default function Mainbar() {
       </NavbarContent>
       <NavbarContent justify="end">
         <NavbarItem className="hidden lg:flex">
-          <Link href="#" className="text-accent hover:text-primary">Login</Link>
+          <Link href="/login" className="text-accent hover:text-primary">Login</Link>
         </NavbarItem>
         <NavbarItem>
-          <Button as={Link} color="primary" href="#" variant="flat" className="bg-primary text-background hover:bg-primary-dark">
+          <Button as={Link} color="primary" href="/signup" variant="flat" className="bg-primary text-background hover:bg-primary-dark">
             Sign Up
           </Button>
         </NavbarItem>
