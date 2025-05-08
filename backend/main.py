@@ -1,36 +1,54 @@
 from fastapi import FastAPI, Request, HTTPException, Depends
+from fastapi.middleware.cors import CORSMiddleware
+from jose import jwt
+import requests
 import os
 from dotenv import load_dotenv
-import requests
 
 load_dotenv()
 app = FastAPI()
 
-CLERK_ISSUER = os.getenv("CLERK_ISSUER")  
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
+CLERK_ISSUER = os.getenv("CLERK_ISSUER")
+JWKS_URL = f"{CLERK_ISSUER}/.well-known/jwks.json"
+JWKS = requests.get(JWKS_URL).json()
+
+def get_public_key(token):
+    headers = jwt.get_unverified_header(token)
+    for key in JWKS["keys"]:
+        if key["kid"] == headers["kid"]:
+            return key
+    raise HTTPException(status_code=401, detail="Public key not found.")
 
 def verify_token(request: Request):
-    token = request.headers.get("Authorization")
-    if not token or not token.startswith("Bearer "):
+    auth = request.headers.get("Authorization")
+    if not auth or not auth.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Missing or invalid token")
-
-    session_token = token.split("Bearer ")[1]
-
-    # Verify with Clerk
-    res = requests.get(
-        f"{CLERK_ISSUER}/v1/introspect",
-        headers={"Authorization": f"Bearer {session_token}"}
-    )
-
-    if res.status_code != 200 or not res.json().get("active"):
-        raise HTTPException(status_code=401, detail="Unauthorized")
-
-    return res.json()
+    token = auth.split("Bearer ")[1]
+    key = get_public_key(token)
+    try:
+        payload = jwt.decode(
+            token,
+            key,
+            algorithms=key["alg"],
+            audience=None,  # Set if you use audience
+            issuer=CLERK_ISSUER,
+        )
+        return payload
+    except Exception as e:
+        raise HTTPException(status_code=401, detail="Invalid token")
 
 @app.get("/")
-def asnwer():
-    return {"message": f"Yo Buddy"}
-# Test route
+def answer():
+    return {"message": "Yo Buddy"}
+
 @app.get("/dashboard")
 def protected(user_data: dict = Depends(verify_token)):
-    return {"message": f"Hello, {user_data.get('sub')}!"}
+    return {"message": f"Hello, {user_data.get('sub', 'user')}!"}
