@@ -7,9 +7,8 @@ load_dotenv()
 app = FastAPI()
 
 CLERK_ISSUER = os.getenv("CLERK_ISSUER")  
-CLERK_JWT_KEY = "authorization"
 
-# Dependency to validate Clerk token
+
 def verify_token(request: Request):
     token = request.headers.get("Authorization")
     if not token or not token.startswith("Bearer "):
