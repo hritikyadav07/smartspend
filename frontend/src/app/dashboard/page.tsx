@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { useAuth, SignOutButton } from '@clerk/nextjs';
+import { useEffect, useState } from "react";
+import { useAuth, SignOutButton } from "@clerk/nextjs";
 
 export default function Page() {
-  const [message, setMessage] = useState('Loading...');
+  const [message, setMessage] = useState("Loading...");
   const { getToken } = useAuth();
 
   useEffect(() => {
@@ -13,10 +13,13 @@ export default function Page() {
         // Use Clerk JWT template for backend
         const token = await getToken({ template: "backend" });
         if (!token) {
-          setMessage('No token found. Please login.');
+          setMessage("No token found. Please login.");
           return;
         }
-        const res = await fetch('http://localhost:8000/dashboard', {
+        // console.log(token);
+        const base =
+          process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000";
+        const res = await fetch(`${base}/`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -25,10 +28,14 @@ export default function Page() {
         if (res.ok) {
           setMessage(data.message);
         } else {
-          setMessage(`Error: ${data.detail || 'Unknown error'}`);
+          setMessage(
+            `Error: ${data.detail || data.message || "Unknown error"}`
+          );
         }
       } catch (err) {
-        setMessage('Network or server error.');
+        const msg =
+          err instanceof Error ? err.message : "Network or server error.";
+        setMessage(msg);
       }
     };
     fetchDashboard();
@@ -38,11 +45,11 @@ export default function Page() {
     <>
       <p>Welcome,</p>
       <SignOutButton>
-        <button className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors">Logout</button>
+        <button className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors">
+          Logout
+        </button>
       </SignOutButton>
-      <div className="p-4 text-xl font-semibold">
-        {message}
-      </div>
+      <div className="p-4 text-xl font-semibold">{message}</div>
     </>
   );
 }
